@@ -9,9 +9,13 @@ Handles the interactions with IB Gateway to fetch historic data
 of a specifc contract. Also handles the timing?
 
 TODO:
+- Build aux program to handle authentication
+- When run without arguments, have it run through a csv of tickers to load/update
+- How aux program handle downloading tickers from sec into a csv for program to use
 - use env to load file paths
 - have file path direction
-- Save when updated
+- Save when updated 
+- Create header file for this function
 - have ability to look up when last updated
 - when running a second time, copy file contents, add up till last update point and repaste old contents
 """
