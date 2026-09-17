@@ -8,7 +8,12 @@ Responsibilities of this code
 Handles the interactions with IB Gateway to fetch historic data
 of a specifc contract. Also handles the timing?
 
-
+TODO:
+- use env to load file paths
+- have file path direction
+- Save when updated
+- have ability to look up when last updated
+- when running a second time, copy file contents, add up till last update point and repaste old contents
 """
 def main():
      stockTicker = sys.argv[1]
