@@ -20,8 +20,20 @@ TODO:
 - when running a second time, copy file contents, add up till last update point and repaste old contents
 """
 def main():
-     stockTicker = sys.argv[1]
-     returnMaxStockChart(stockTicker)
+    if len(sys.argv) < 2:
+        print(f"Usage: python3 {sys.argv[0]} [ticker] [--options]")
+        sys.exit(1)
+
+    stockTicker = sys.argv[1]
+    options = sys.argv[2]
+
+    if not (options[0] == "-") or not (options[1] == "-"):
+        print(f"Usage: python3 {sys.argv[0]} [ticker] [--options]")
+        sys.exit(1)
+
+    current_date = dt.datetime.now()
+    # check for ticker here, if ticker hasn't been update since last month -- update, unless force update
+    returnMaxStockChart(stockTicker)
 
 # get stock prices as far back as possible
 # adjusted for dividends and stock splits
@@ -61,8 +73,7 @@ def returnMaxStockChart(ticker):
 def chunkToCSV(tenYearChunck, ticker):
       with open(f"{ticker}.csv", 'a') as f: 
         for i in range(len(tenYearChunck) - 1, 0, -1):
-            f.write(f"{tenYearChunck[i].date},{tenYearChunck[i].open},{tenYearChunck[i].high},{tenYearChunck[i].low},{tenYearChunck[i].close},{tenYearChunck[i].volume},{tenYearChunck[i].average}")
-            f.write('\n')
+            f.write(f"{tenYearChunck[i].date},{tenYearChunck[i].open},{tenYearChunck[i].high},{tenYearChunck[i].low},{tenYearChunck[i].close},{tenYearChunck[i].volume},{tenYearChunck[i].average}\n")
 
 if __name__ == "__main__":
     main()
