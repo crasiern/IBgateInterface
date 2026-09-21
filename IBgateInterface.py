@@ -25,11 +25,16 @@ def main():
         sys.exit(1)
 
     stockTicker = sys.argv[1]
-    options = sys.argv[2]
+    options
+    optionsExist = False
 
-    if not (options[0] == "-") or not (options[1] == "-"):
-        print(f"Usage: python3 {sys.argv[0]} [ticker] [--options]")
-        sys.exit(1)
+    if len(sys.argv) > 2:
+        optionsExist = True
+        options = sys.argv[2]
+
+        if not (options[0] == "-") or not (options[1] == "-"):
+            print(f"Usage: python3 {sys.argv[0]} [ticker] [--options]")
+            sys.exit(1)
 
     current_date = dt.datetime.now()
     # check for ticker here, if ticker hasn't been update since last month -- update, unless force update

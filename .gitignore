@@ -1,0 +1,7 @@
+*
+!.gitignore
+!*.py
+!*.md
+!*.c
+!CMakeLists.txt
+!*.h
