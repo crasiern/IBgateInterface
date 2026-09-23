@@ -4,10 +4,15 @@
 #include <cjson/cJSON.h>
 #include <time.h>
 
+#define UPDATEFREQ 40
+
 int retrieveFile(const char** jsonPointer);
 static size_t write_cb(char *contents, size_t size, size_t nmemb, void *stream);
 int JSONtoCSV(const char* jsonString);
-int needsUpdate();
+int needsUpdate(char* current_date);
+void dateStringified(char* _date, int _year, int _month, int _day);
+int moreThanMonth(char* firstDate, char* secondDate);
+void addHeader(char* name, char* date);
 
 const char* SEC_URL = "https://www.sec.gov/files/company_tickers.json";
 static const char filename[] = "../company_tickers.csv";
@@ -18,31 +23,19 @@ struct mem_chunk {
     size_t size;
 };
 
-// HEADER FORMAT: [name],[YEAR][MONTH][DAY],[YEAR][MONTH][DAY] // ex. {company_tickers,20260921,19800514}
-// to compare dates, turn to string. 0 place is needed for single digits. If 10, 20, 30, may need to times 10, then math can be done
-
 int main()
 {
     time_t now = time(NULL);  
     struct tm *current_time = localtime(&now);
-    printf("Year: %d\n", current_time->tm_year + 1900); 
-    printf("Month: %d\n", current_time->tm_mon + 1); 
-    printf("Day: %d\n", current_time->tm_mday);
-    // need time converting function 
-
-
-    // check header of ticker_loader.csv for timestamp
-    // if header < 30 days, do not retrieve new file unless forced?
-
-    // handle errors via ints
-    // only run if header < 30 days or 
-    // maybe should return a char*?
-
+    char current_date[11];
+    dateStringified(current_date, current_time->tm_year, current_time->tm_mon, current_time->tm_mday);
+    if(needsUpdate(current_date) == 0) 
+        return 0;
+    
+    addHeader("company_tickers", current_date);
     const char* jsonString = NULL;
     retrieveFile(&jsonString);
-    printf("Size: %zu\n", strlen(jsonString));
-    // convert json to csv, add header, and delete json file
-
+    JSONtoCSV(jsonString);
     return 0;
 }
 
@@ -103,7 +96,7 @@ int JSONtoCSV(const char* jsonString)
     if (tickers_json == NULL)
         return 404;
     
-    FILE *csvFile = fopen(filesname, "wb");
+    FILE *csvFile = fopen(filename, "a");
     // create header
 
     int index = 0;
@@ -111,20 +104,17 @@ int JSONtoCSV(const char* jsonString)
     {
         // hopefully 8 is enough, needs \0
         char indexOfJSON[8];
-        const cJSON *company_data = NULL;
-        snprintf(indexOfJSON, sizeof(indexOfJSON), "%i", index);
+        snprintf(indexOfJSON, sizeof(indexOfJSON), "%d", index);
         company_index = cJSON_GetObjectItemCaseSensitive(tickers_json, indexOfJSON);
 
-        // check if null or invalid and break
+        if (company_index == NULL)
+            break;
 
-        cJSON_ArrayForEach(company_data, company_index)
-        {
-            cJSON *cik_str = cJSON_GetObjectItemCaseSensitive(company_data, "cik_str");
-            cJSON *ticker = cJSON_GetObjectItemCaseSensitive(company_data, "ticker");
-            cJSON *title = cJSON_GetObjectItemCaseSensitive(company_data, "title");
-
-            // add to new line of csv
-        }
+        cJSON *cik_str = company_index->child;
+        cJSON *ticker = cik_str->next;
+        cJSON *title =ticker->next;
+        fprintf(csvFile, "%d,%s,%s\n", cik_str->valueint, ticker->valuestring, title->valuestring);
+        
         index++;
     }
 
@@ -133,7 +123,7 @@ int JSONtoCSV(const char* jsonString)
 }
 
 // should probably take in date
-int needsUpdate()
+int needsUpdate(char* current_date)
 {
     FILE *tickerFile = fopen(filename, "r");
     if (tickerFile == NULL)
@@ -143,12 +133,66 @@ int needsUpdate()
     }
     
     char headerLine[256];
-    fgets(headerLine, sizeof(headerLine), tickerFile);
-
-    // use strtok() to get each , piece
-    // convert to math
-    // return 1 if needs update
-
+    char* reszult = fgets(headerLine, sizeof(headerLine), tickerFile);
+    char *last_date;
+    strtok(headerLine, ",\n");
+    last_date = strtok(NULL, ",\n");
+    int result = moreThanMonth(current_date, last_date);
     fclose(tickerFile);
-    return 0;
+    return result;
+}
+
+void dateStringified(char* _date, int _year, int _month, int _day)
+{
+    int formatSize = 11; // ex. '1990 09 11\0' string requires 11 characters
+    int nyear = _year + 1900;
+    int nmonth = _month + 1;
+    snprintf(_date, formatSize, "%04d %02d %02d", nyear, nmonth, _day);
+}
+
+// first date > second date
+int moreThanMonth(char* firstDate, char* secondDate)
+{
+    int year1, month1, day1, year2, month2, day2;
+    sscanf(firstDate, "%d" "%d" "%d", &year1, &month1, &day1);
+    sscanf(secondDate, "%d" "%d" "%d", &year2, &month2, &day2);
+
+    if ((year1 - year2) > 1)
+        return 1;
+    if ((month1 - month2) > 1)
+        return 1;
+    
+    int daysPast = 0;
+    int assumedDaysInMonth = 30;
+    int monthsInYears = 12;
+    while (daysPast < UPDATEFREQ)
+    {
+        if (month1 == month2 && day1 == day2)
+            return 0;
+
+        day1--;
+
+        if (day1 == 0)
+        {
+            day1 = assumedDaysInMonth;
+            month1--;
+            if (month1 == 0)
+            {
+                month1 = monthsInYears;
+                year1--;
+            }
+        }
+
+        daysPast++;     
+    }
+    
+    return 1;
+}
+
+void addHeader(char* name, char* date)
+{
+    char* delim = ",";
+    FILE *tickerFile = fopen(filename, "w");
+    fprintf(tickerFile, "%s,%s\n", name, date);
+    fclose(tickerFile);
 }
