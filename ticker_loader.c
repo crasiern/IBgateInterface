@@ -157,9 +157,10 @@ int moreThanMonth(char* firstDate, char* secondDate)
     sscanf(firstDate, "%d" "%d" "%d", &year1, &month1, &day1);
     sscanf(secondDate, "%d" "%d" "%d", &year2, &month2, &day2);
 
-    if ((year1 - year2) > 1)
+    // greater than 2 guarentees age, not month/year roll over
+    if ((year1 - year2) > 2)
         return 1;
-    if ((month1 - month2) > 1)
+    if ((month1 - month2) > 2)
         return 1;
     
     int daysPast = 0;

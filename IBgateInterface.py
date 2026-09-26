@@ -38,6 +38,7 @@ def main():
 
     current_date = dt.datetime.now()
     # check for ticker here, if ticker hasn't been update since last month -- update, unless force update
+    addHeader(stockTicker, current_date)
     returnMaxStockChart(stockTicker)
 
 # get stock prices as far back as possible
@@ -79,6 +80,11 @@ def chunkToCSV(tenYearChunck, ticker):
       with open(f"{ticker}.csv", 'a') as f: 
         for i in range(len(tenYearChunck) - 1, 0, -1):
             f.write(f"{tenYearChunck[i].date},{tenYearChunck[i].open},{tenYearChunck[i].high},{tenYearChunck[i].low},{tenYearChunck[i].close},{tenYearChunck[i].volume},{tenYearChunck[i].average}\n")
+
+def addHeader(ticker, current_date):
+    stringDate = current_date.strptime("%d/%m/%Y")
+    with open(f"{ticker}.csv", 'a') as f: 
+        f.write(f"{ticker},{stringDate}")
 
 if __name__ == "__main__":
     main()
