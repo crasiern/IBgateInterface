@@ -1,90 +1,126 @@
 from ib_async import *
+from pathlib import Path
 import datetime as dt
-import sys
+import logging
 
 """
-Responsibilities of this code
-
-Handles the interactions with IB Gateway to fetch historic data
-of a specifc contract. Also handles the timing?
-
 TODO:
-- Build aux program to handle authentication
-- When run without arguments, have it run through a csv of tickers to load/update
-- How aux program handle downloading tickers from sec into a csv for program to use
-- use env to load file paths
-- have file path direction
-- Save when updated 
-- Create header file for this function
-- have ability to look up when last updated
-- when running a second time, copy file contents, add up till last update point and repaste old contents
+- debug csv so that prices from jan 1 of current year onward are also captured
+- debug so that tickers that fail are caught and logged
 """
-def main():
-    if len(sys.argv) < 2:
-        print(f"Usage: python3 {sys.argv[0]} [ticker] [--options]")
-        sys.exit(1)
 
-    stockTicker = sys.argv[1]
-    options
-    optionsExist = False
+"""
+Error Codes:
+100 -> Internal Error
 
-    if len(sys.argv) > 2:
-        optionsExist = True
-        options = sys.argv[2]
+200 -> Server/File Error
+    101 = csvSaveFilePath is not valid
 
-        if not (options[0] == "-") or not (options[1] == "-"):
-            print(f"Usage: python3 {sys.argv[0]} [ticker] [--options]")
-            sys.exit(1)
+300 -> IB Gateway Error
+    301 = ConnectionError
+    302 = TimeoutError
 
-    current_date = dt.datetime.now()
-    # check for ticker here, if ticker hasn't been update since last month -- update, unless force update
-    addHeader(stockTicker, current_date)
-    returnMaxStockChart(stockTicker)
+"""
 
-# get stock prices as far back as possible
-# adjusted for dividends and stock splits
-def returnMaxStockChart(ticker):
-    ib = IB()
-    try:
-        ib.connect('127.0.0.1', 4001, clientId=1)
-    except ConnectionError:
-        print("IB Gateway not functioning")
-        sys.exit(1)
-    except TimeoutError:
-            print("Timed Out")
-            sys.exit(2)
+class interface:
+    def __init__(self, filePath, cutOffDays):
+        self.is_functional = True
+        util.logToConsole(logging.CRITICAL)
+        self.current_date = dt.datetime.now()
+        self.__file_appendix = "_prices.csv"
+        self.__cutOffDays = cutOffDays
 
-    stock = Stock(ticker, 'SMART', 'USD')
-    current_date = dt.datetime.now()
-    target_year = ib.reqHeadTimeStamp(stock, whatToShow='ADJUSTED_LAST', useRTH=False).year
+        self.ib = IB()
+        self.ib_error_code = self.__intialize_ib_gateway()
+        if not self.ib_error_code == 0:
+            self.is_functional = False
 
-    year_incrments = 10
-    index_year = int(current_date.year)
-    index_date = dt.date(index_year, 1, 1)
+        self.csvSaveFilePath = filePath
+        self.file_error_code = self.__validate_file_path(filePath)
+        if not self.file_error_code == 0:
+            self.is_functional = False
 
-    while True:
-        if index_date.year < target_year:
-                    break
-        tenYearChunck = ib.reqHistoricalData(
-            stock, endDateTime=index_date, 
-            durationStr='10 Y',
-            barSizeSetting='1 day', 
-            whatToShow='TRADES', 
-            useRTH=False
-        )
-        chunkToCSV(tenYearChunck, ticker)
-        index_date = index_date.replace(year=index_date.year - year_incrments)
+    def __intialize_ib_gateway(self) -> int:
+        try:
+            self.ib.connect('127.0.0.1', 4001, clientId=1)
+            return 0
+        except ConnectionError:
+            print("refuse coinecton")
+            return 301
+        except TimeoutError:
+            return 302
+    
+    def __validate_file_path(self, filePath) -> int:
+        path = Path(filePath)
+        if not path.exists():
+            return 101
+        return 0
 
-# probably should make with filepath in mind
-def chunkToCSV(tenYearChunck, ticker):
-      with open(f"{ticker}.csv", 'a') as f: 
+    def sync(self, ticker_symbol) -> int:
+        price_file = self.__get_price_file_path(ticker_symbol)
+        if not self.__validate_file_path(price_file) == 0:
+            status = self.__update_ticker_prices(ticker_symbol)
+            return status
+
+        if self.__does_file_need_update(ticker_symbol):
+            status = self.__update_ticker_prices(ticker_symbol)
+            return status
+        # does not need update
+        return 0
+
+    def __does_file_need_update(self, ticker_symbol) -> bool:
+        with open(self.__get_price_file_path(ticker_symbol), 'r') as f:
+            headerDate = f.readline().rstrip('\r\n').split(',')[1]
+            last_update = dt.datetime.strptime(headerDate, "%m/%d/%Y")
+            date_cutoff = self.current_date - dt.timedelta(days=self.__cutOffDays)
+            if last_update < date_cutoff:
+                return True
+            return False
+
+    def __get_price_file_path(self, ticker_symbol) -> str:
+        return f'{self.csvSaveFilePath}{ticker_symbol}{self.__file_appendix}'
+
+# handle errors
+    def __update_ticker_prices(self, ticker_symbol) -> int:
+        self.__clear_file(ticker_symbol)
+        self.__addFileHeader(ticker_symbol)
+        self.__parse_api_data_to_csv(ticker_symbol)
+
+# get rid of this
+    def __clear_file(self, ticker_symbol):
+        with open(self.__get_price_file_path(ticker_symbol), 'w') as f: 
+                f.write(f"")
+
+# this should be a write call
+    def __addFileHeader(self, ticker_symbol):
+        stringDate = self.current_date.strftime("%m/%d/%Y")
+        with open(self.__get_price_file_path(ticker_symbol), 'a') as f: 
+            f.write(f"{ticker_symbol},{stringDate}\n")
+
+    def __parse_api_data_to_csv(self, ticker_symbol):
+        stock = Stock(ticker_symbol, 'SMART', 'USD')
+        
+        target_year = self.ib.reqHeadTimeStamp(stock, whatToShow='ADJUSTED_LAST', useRTH=False).year
+
+        year_incrments = 10
+        index_year = int(self.current_date.year)
+        index_date = dt.date(index_year, 1, 1)
+
+        while True:
+            if index_date.year < target_year:
+                break
+            tenYearChunck = self.ib.reqHistoricalData(
+                stock, endDateTime=index_date, 
+                durationStr='10 Y',
+                barSizeSetting='1 day', 
+                whatToShow='TRADES', 
+                useRTH=False
+            )
+
+            self.__write_chunk_to_csv(tenYearChunck, ticker_symbol)
+            index_date = index_date.replace(year=index_date.year - year_incrments)
+
+    def __write_chunk_to_csv(self, tenYearChunck, ticker_symbol):
+      with open(self.__get_price_file_path(ticker_symbol), 'a') as f: 
         for i in range(len(tenYearChunck) - 1, 0, -1):
             f.write(f"{tenYearChunck[i].date},{tenYearChunck[i].open},{tenYearChunck[i].high},{tenYearChunck[i].low},{tenYearChunck[i].close},{tenYearChunck[i].volume},{tenYearChunck[i].average}\n")
-
-def addHeader(ticker, current_date):
-    stringDate = current_date.strptime("%d/%m/%Y")
-    with open(f"{ticker}.csv", 'a') as f: 
-        f.write(f"{ticker},{stringDate}")
-
-if __name__ == "__main__":
-    main()
