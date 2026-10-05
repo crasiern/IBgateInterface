@@ -52,5 +52,14 @@ cutOffDays =
 - at present, program is quite slow. Back of math calculations predict that it would take a full work week of ~37 hours to load price data for every single ticker listed.
 
 ## Dependencies
-Program uses a c module I built called smart_update from ticker_loader. This module handles the management of the company_tickers.csv file. To use, visit github repo [here](https://github.com/crasiern/ticker_loader).
+- Program heavily relies on ib_async for interactions with IB Gateway. More details can be found [here](https://github.com/ib-api-reloaded/ib_async)
 
+- Program uses a c module I built called smart_update from ticker_loader. This module handles the management of the company_tickers.csv file. To use, visit github repo [here](https://github.com/crasiern/ticker_loader).
+
+### Other dependencies inlcude:
+* Path
+* datetime
+* logging
+* sys
+* tomllib
+(I should write down what version of each but just assume the most recent version)
