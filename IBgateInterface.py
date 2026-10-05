@@ -4,11 +4,6 @@ import datetime as dt
 import logging
 
 """
-TODO:
-- debug so that tickers that fail are caught and logged
-"""
-
-"""
 Error Codes:
 100 -> Internal Error
 
@@ -78,12 +73,10 @@ class interface:
     def __get_price_file_path(self, ticker_symbol) -> str:
         return f'{self.csvSaveFilePath}{ticker_symbol}{self.__file_appendix}'
 
-# handle errors
     def __update_ticker_prices(self, ticker_symbol):
         self.__addFileHeader(ticker_symbol)
         self.__parse_api_data_to_csv(ticker_symbol)
 
-# this should be a write call
     def __addFileHeader(self, ticker_symbol):
         stringDate = self.current_date.strftime("%m/%d/%Y")
         with open(self.__get_price_file_path(ticker_symbol), 'w') as f: 
