@@ -5,7 +5,6 @@ import logging
 
 """
 TODO:
-- debug csv so that prices from jan 1 of current year onward are also captured
 - debug so that tickers that fail are caught and logged
 """
 
@@ -45,7 +44,6 @@ class interface:
             self.ib.connect('127.0.0.1', 4001, clientId=1)
             return 0
         except ConnectionError:
-            print("refuse coinecton")
             return 301
         except TimeoutError:
             return 302
@@ -58,8 +56,8 @@ class interface:
 
     def sync(self, ticker_symbol) -> int:
         price_file = self.__get_price_file_path(ticker_symbol)
-        if not self.__validate_file_path(price_file) == 0:
-            status = self.__update_ticker_prices(ticker_symbol)
+        status = self.__validate_file_path(price_file)
+        if not status == 0:
             return status
 
         if self.__does_file_need_update(ticker_symbol):
@@ -81,20 +79,14 @@ class interface:
         return f'{self.csvSaveFilePath}{ticker_symbol}{self.__file_appendix}'
 
 # handle errors
-    def __update_ticker_prices(self, ticker_symbol) -> int:
-        self.__clear_file(ticker_symbol)
+    def __update_ticker_prices(self, ticker_symbol):
         self.__addFileHeader(ticker_symbol)
         self.__parse_api_data_to_csv(ticker_symbol)
-
-# get rid of this
-    def __clear_file(self, ticker_symbol):
-        with open(self.__get_price_file_path(ticker_symbol), 'w') as f: 
-                f.write(f"")
 
 # this should be a write call
     def __addFileHeader(self, ticker_symbol):
         stringDate = self.current_date.strftime("%m/%d/%Y")
-        with open(self.__get_price_file_path(ticker_symbol), 'a') as f: 
+        with open(self.__get_price_file_path(ticker_symbol), 'w') as f: 
             f.write(f"{ticker_symbol},{stringDate}\n")
 
     def __parse_api_data_to_csv(self, ticker_symbol):
@@ -104,7 +96,9 @@ class interface:
 
         year_incrments = 10
         index_year = int(self.current_date.year)
-        index_date = dt.date(index_year, 1, 1)
+        index_month = int(self.current_date.month)
+        index_day = int(self.current_date.day)
+        index_date = dt.date(index_year, index_month, index_day)
 
         while True:
             if index_date.year < target_year:
