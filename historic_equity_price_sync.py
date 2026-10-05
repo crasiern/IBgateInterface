@@ -4,12 +4,6 @@ import tomllib
 from ticker_loader import smart_update
 from datetime import datetime
 
-
-"""
-TODO:
-- resolve issues with "-" in ticker
-"""
-
 def main():
     with open("config.toml", "rb") as config:
         settings = tomllib.load(config)

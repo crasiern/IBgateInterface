@@ -3,19 +3,6 @@ from pathlib import Path
 import datetime as dt
 import logging
 
-"""
-Error Codes:
-100 -> Internal Error
-
-200 -> Server/File Error
-    101 = csvSaveFilePath is not valid
-
-300 -> IB Gateway Error
-    301 = ConnectionError
-    302 = TimeoutError
-
-"""
-
 class interface:
     def __init__(self, filePath, cutOffDays):
         self.is_functional = True
@@ -53,11 +40,11 @@ class interface:
         price_file = self.__get_price_file_path(ticker_symbol)
         status = self.__validate_file_path(price_file)
         if not status == 0:
-            status = self.__update_ticker_prices(ticker_symbol)
+            status = self.__parse_api_data_to_csv(ticker_symbol)
             return status
 
         if self.__does_file_need_update(ticker_symbol):
-            status = self.__update_ticker_prices(ticker_symbol)
+            status = self.__parse_api_data_to_csv(ticker_symbol)
             return status
         # does not need update
         return 0
@@ -74,11 +61,6 @@ class interface:
     def __get_price_file_path(self, ticker_symbol) -> str:
         return f'{self.csvSaveFilePath}{ticker_symbol}{self.__file_appendix}'
 
-    def __update_ticker_prices(self, ticker_symbol) -> int:
-        self.__addFileHeader(ticker_symbol)
-        self.__parse_api_data_to_csv(ticker_symbol)
-        return 0
-
     def __addFileHeader(self, ticker_symbol):
         stringDate = self.current_date.strftime("%m/%d/%Y")
         with open(self.__get_price_file_path(ticker_symbol), 'w') as f: 
@@ -86,8 +68,13 @@ class interface:
 
     def __parse_api_data_to_csv(self, ticker_symbol):
         stock = Stock(ticker_symbol, 'SMART', 'USD')
-        
-        target_year = self.ib.reqHeadTimeStamp(stock, whatToShow='ADJUSTED_LAST', useRTH=False).year
+        head_time = self.ib.reqHeadTimeStamp(stock, whatToShow='ADJUSTED_LAST', useRTH=False)
+        if not head_time:
+            return 303
+        target_year = head_time.year
+
+        # error check for valid reqHeadTimeStamp first
+        self.__addFileHeader(ticker_symbol)
 
         year_incrments = 10
         index_year = int(self.current_date.year)
@@ -108,6 +95,8 @@ class interface:
 
             self.__write_chunk_to_csv(tenYearChunck, ticker_symbol)
             index_date = index_date.replace(year=index_date.year - year_incrments)
+
+        return 0
 
     def __write_chunk_to_csv(self, tenYearChunck, ticker_symbol):
       with open(self.__get_price_file_path(ticker_symbol), 'a') as f: 
