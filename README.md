@@ -1,18 +1,15 @@
 # IBGateInterface\*
 For purposes of automating collection of equity price data via IB Gateway
 
-* Program needs a new name
+\* Program needs a new name
 
 # Dataformat:
 
-[ticker_symbol],[last_update_date]
+[ticker_symbol],[last_update_date]\
+[date],[open]\*,[high]\*,[low]\*,[close]\*,[volume],[average]\
+[repeat above until first trade date]\
 
-[date],[open]\*,[high]\*,[low]\*,[close]\*,[volume],[average]
-
-[repeat above until first trade date]
-
-
-* data is adjusted for splits and dividends 
+\* data is adjusted for splits and dividends 
 
 # Usage:
 Code will produce files in three seperate locations: The first will be the csv files in the "save_path" directory [see below], where the historic prices of each equity is saved in the form of [ticker]_prices.csv. The second will be at the "ticker_list_path" directory, company_tickers.csv, which is the csv version of the SEC's company_tickers.json found [here](https://www.sec.gov/file/company-tickers). This file is important because the program loads the tickers from it to query price histories. As of yet, there is no way to select indiviudal or desired groups of securities, it is all or nothing based on this file. My recommendation is to follow the format in the csv and edit the file yourself if you only care about a small handful of securities. Be mindful of the commas and the header. The final file is found at the "log_error_path" directory. There, "errors.log" logs every error the program encounters, along with a timestamp and the corresponding error produced. This log can be used to deduce what went wrong with the program, and is espcially useful in determining which, if any, securities were skipped in the updating process. 
