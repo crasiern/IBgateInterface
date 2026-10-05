@@ -7,7 +7,7 @@ For purposes of automating collection of equity price data via IB Gateway
 
 [ticker_symbol],[last_update_date]\
 [date],[open]\*,[high]\*,[low]\*,[close]\*,[volume],[average]\
-[repeat above until first trade date]\
+[repeat above until first trade date]
 
 \* data is adjusted for splits and dividends 
 
@@ -28,7 +28,7 @@ Code will produce files in three seperate locations: The first will be the csv f
 # Config:
 This program uses a "config.toml" file to properly configue settings and file paths. Please ensure that directory paths end with '/'. Nothing in the code will enforce this rule, it will just break. 
 
-## Structure of config.toml:
+### Structure of config.toml:
 
 [directory_paths]
 save_path = 
