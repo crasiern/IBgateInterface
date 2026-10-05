@@ -6,8 +6,11 @@ For purposes of automating collection of equity price data via IB Gateway
 # Dataformat:
 
 [ticker_symbol],[last_update_date]
+
 [date],[open]\*,[high]\*,[low]\*,[close]\*,[volume],[average]
+
 [repeat above until first trade date]
+
 
 * data is adjusted for splits and dividends 
 
