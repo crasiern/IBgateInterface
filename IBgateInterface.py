@@ -53,6 +53,7 @@ class interface:
         price_file = self.__get_price_file_path(ticker_symbol)
         status = self.__validate_file_path(price_file)
         if not status == 0:
+            status = self.__update_ticker_prices(ticker_symbol)
             return status
 
         if self.__does_file_need_update(ticker_symbol):
@@ -73,9 +74,10 @@ class interface:
     def __get_price_file_path(self, ticker_symbol) -> str:
         return f'{self.csvSaveFilePath}{ticker_symbol}{self.__file_appendix}'
 
-    def __update_ticker_prices(self, ticker_symbol):
+    def __update_ticker_prices(self, ticker_symbol) -> int:
         self.__addFileHeader(ticker_symbol)
         self.__parse_api_data_to_csv(ticker_symbol)
+        return 0
 
     def __addFileHeader(self, ticker_symbol):
         stringDate = self.current_date.strftime("%m/%d/%Y")

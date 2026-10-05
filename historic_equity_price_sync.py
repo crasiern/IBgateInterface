@@ -48,15 +48,15 @@ class error_logger:
 
     def log_connection_error(self, ib_error, file_error):
         with open(self.file_path, 'a') as f:
-            f.write(f"At {self.__time_stamp()}: Connection Error! IB Error: {ib_error}; File Error: {file_error}")
+            f.write(f"At {self.__time_stamp()}: Connection Error! IB Error: {ib_error}; File Error: {file_error}\n")
 
     def log_ticker_error(self, ticker, error):
         with open(self.file_path, 'a') as f:
-            f.write(f"At {self.__time_stamp()}: {ticker} has error {error}")
+            f.write(f"At {self.__time_stamp()}: {ticker} has error {error}\n")
 
     def log_file_error(self, file, error):
         with open(self.file_path, 'a') as f:
-            f.write(f"At {self.__time_stamp()}: {file} has error {error}")
+            f.write(f"At {self.__time_stamp()}: {file} has error {error}\n")
 
 if __name__ == "__main__":
     main()
