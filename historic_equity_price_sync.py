@@ -7,8 +7,7 @@ from datetime import datetime
 
 """
 TODO:
-- unbreak loop
-- run on server
+- resolve issues with "-" in ticker
 """
 
 def main():
@@ -37,7 +36,7 @@ def main():
             update_status = price_sync.sync(company_ticker)
             if not update_status == 0:
                 logger.log_ticker_error(company_ticker, update_status)
-            break # break exists so entire list is not loaded
+           # break # break exists so entire list is not loaded
 
 class error_logger:
     def __init__(self, file_path):
